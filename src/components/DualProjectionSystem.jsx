@@ -41,11 +41,19 @@ const DualProjectionSystem = () => {
   const [rotationAngle, setRotationAngle] = useState(0);
   const rotationInterval = useRef(null);
   const [focusPoints] = useState([
-    { id: 'focus1', x: 200, y: 150, fixed: true },
-    { id: 'focus2', x: 400, y: 150, fixed: true }
+    { id: 'focus1', x: 200, y: 600, fixed: true },
+    { id: 'focus2', x: 400, y: 600, fixed: true }
   ]);
+  const [projectionType, setProjectionType] = useState('orthogonal'); // or 'perspective'
+
+  const [trails, setTrails] = useState({}); // Store trails for each point
+  const MAX_TRAIL_LENGTH = 100; // Maximum number of positions to remember
+  const [lastTrailUpdate, setLastTrailUpdate] = useState({});  // Add this with other state declarations
+  const TRAIL_UPDATE_INTERVAL = 50; // Update trail every 100ms
+
+
   const boxRef = useRef(null);
-  const PERPENDICULAR_LENGTH = 300;
+  const PERPENDICULAR_LENGTH = 700;
   const GRID_SIZE = 200;
 
   const addPoint = () => {
@@ -56,6 +64,45 @@ const DualProjectionSystem = () => {
       color: colors[points.length % colors.length]
     };
     setPoints([...points, newPoint]);
+  };
+
+  const updateTrails = (pointId, proj1, proj2) => {
+    if (!proj1 || !proj2) return;
+
+    // Get current timestamp
+    const now = Date.now();
+
+    // Check if enough time has passed since last update for this point
+    if (lastTrailUpdate[pointId] && (now - lastTrailUpdate[pointId]) < TRAIL_UPDATE_INTERVAL) {
+      return; // Skip this update if not enough time has passed
+    } else {
+      lastTrailUpdate[pointId] = now; 
+    }
+    
+    // Calculate plot coordinates
+    const plotX = 300 + (proj1.distance / 2);
+    const plotY = 300 - (proj2.distance / 2);
+    
+    setTrails(prevTrails => {
+      // Get existing trail or create new one
+      const trail = prevTrails[pointId] || [];
+      
+      // Add new position
+      const newTrail = [...trail, { x: plotX, y: plotY }];
+      
+      // Keep only the last MAX_TRAIL_LENGTH positions
+      if (newTrail.length > MAX_TRAIL_LENGTH) {
+        newTrail.shift(); // Remove oldest position
+      }
+      
+      const updatedTrails = {
+        ...prevTrails,
+        [pointId]: newTrail
+      };
+      
+      // console.log('Updated trails:', updatedTrails); // Debug log
+      return updatedTrails;
+    });
   };
 
   const removePoint = (id) => {
@@ -79,6 +126,14 @@ const DualProjectionSystem = () => {
           ? { ...point, x, y }
           : point
       ));
+
+      // Update trails for the dragged point
+      const point = points.find(p => p.id === draggedPoint);
+      if (point && anchorPoint) {
+        const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
+        const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
+        updateTrails(draggedPoint, proj1, proj2);
+      }
     }
   };
 
@@ -92,22 +147,35 @@ const DualProjectionSystem = () => {
     const anchor = points.find(p => p.id === anchorPoint);
     if (!anchor) return;
 
-    setPoints(prevPoints => prevPoints.map(point => {
-      if (point.id === anchorPoint) return point;
-
-      // Calculate rotation
-      const dx = point.x - anchor.x;
-      const dy = point.y - anchor.y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-      const currentAngle = Math.atan2(dy, dx);
-      const newAngle = currentAngle + (Math.PI / 180); // Rotate by 1 degree
-
-      return {
-        ...point,
-        x: anchor.x + radius * Math.cos(newAngle),
-        y: anchor.y + radius * Math.sin(newAngle)
-      };
-    }));
+    setPoints(prevPoints => {
+      const newPoints = prevPoints.map(point => {
+        if (point.id === anchorPoint) return point;
+  
+        // Calculate rotation
+        const dx = point.x - anchor.x;
+        const dy = point.y - anchor.y;
+        const radius = Math.sqrt(dx * dx + dy * dy);
+        const currentAngle = Math.atan2(dy, dx);
+        const newAngle = currentAngle + (Math.PI / 180);
+  
+        return {
+          ...point,
+          x: anchor.x + radius * Math.cos(newAngle),
+          y: anchor.y + radius * Math.sin(newAngle)
+        };
+      });
+  
+      // Update trails for all rotating points
+      newPoints.forEach(point => {
+        if (point.id !== anchorPoint) {
+          const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
+          const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
+          updateTrails(point.id, proj1, proj2);
+        }
+      });
+  
+      return newPoints;
+    });
 
     setRotationAngle(prev => (prev + 1) % 360);
   };
@@ -152,12 +220,24 @@ const DualProjectionSystem = () => {
     const perpX = -unitY;
     const perpY = unitX;
 
-    return {
-      x1: focusPoint.x - perpX * PERPENDICULAR_LENGTH / 2,
-      y1: focusPoint.y - perpY * PERPENDICULAR_LENGTH / 2,
-      x2: focusPoint.x + perpX * PERPENDICULAR_LENGTH / 2,
-      y2: focusPoint.y + perpY * PERPENDICULAR_LENGTH / 2
-    };
+    const offsetX = 50 * unitX;
+    const offsetY = 50 *unitY;
+
+    if (projectionType=='orthogonal'){
+      return {
+        x1: focusPoint.x - perpX * PERPENDICULAR_LENGTH / 2,
+        y1: focusPoint.y - perpY * PERPENDICULAR_LENGTH / 2,
+        x2: focusPoint.x + perpX * PERPENDICULAR_LENGTH / 2,
+        y2: focusPoint.y + perpY * PERPENDICULAR_LENGTH / 2,
+      };
+    }else{
+      return {
+        x1: focusPoint.x - perpX * PERPENDICULAR_LENGTH / 2 + offsetX,
+        y1: focusPoint.y - perpY * PERPENDICULAR_LENGTH / 2 + offsetY,
+        x2: focusPoint.x + perpX * PERPENDICULAR_LENGTH / 2 + offsetX,
+        y2: focusPoint.y + perpY * PERPENDICULAR_LENGTH / 2 + offsetY
+      };
+    }
   };
 
   const calculateProjection = (point, focusPoint, perpLine) => {
@@ -166,21 +246,59 @@ const DualProjectionSystem = () => {
     const anchor = points.find(p => p.id === anchorPoint);
     if (!anchor) return null;
 
-    const px = point.x - focusPoint.x;
-    const py = point.y - focusPoint.y;
+    if (projectionType === 'orthogonal') {
+        // Current orthogonal projection logic
+        const px = point.x - focusPoint.x;
+        const py = point.y - focusPoint.y;
 
-    const perpLength = Math.sqrt((perpLine.x2 - perpLine.x1) ** 2 + (perpLine.y2 - perpLine.y1) ** 2);
-    const perpUnitX = (perpLine.x2 - perpLine.x1) / perpLength;
-    const perpUnitY = (perpLine.y2 - perpLine.y1) / perpLength;
+        const perpLength = Math.sqrt((perpLine.x2 - perpLine.x1) ** 2 + 
+                                   (perpLine.y2 - perpLine.y1) ** 2);
+        const perpUnitX = (perpLine.x2 - perpLine.x1) / perpLength;
+        const perpUnitY = (perpLine.y2 - perpLine.y1) / perpLength;
 
-    const dot = px * perpUnitX + py * perpUnitY;
-    
-    return {
-      x: focusPoint.x + perpUnitX * dot,
-      y: focusPoint.y + perpUnitY * dot,
-      distance: dot
-    };
-  };
+        const dot = px * perpUnitX + py * perpUnitY;
+        
+        return {
+            x: focusPoint.x + perpUnitX * dot,
+            y: focusPoint.y + perpUnitY * dot,
+            distance: dot
+        };
+    } else {
+        // New perspective projection logic
+        // Calculate intersection of line from focus through point with perpendicular line
+        const dx = point.x - focusPoint.x;
+        const dy = point.y - focusPoint.y;
+        
+        // Line from focus through point: p = focusPoint + t * (dx, dy)
+        // Perpendicular line: p = perpLine.x1 + s * (perpLine.x2 - perpLine.x1)
+        // Solve for intersection
+        const perpDx = perpLine.x2 - perpLine.x1;
+        const perpDy = perpLine.y2 - perpLine.y1;
+        
+        // Using parametric equation intersection
+        const denominator = dx * perpDy - dy * perpDx;
+        if (Math.abs(denominator) < 1e-10) return null; // Lines are parallel
+        
+        const t = ((perpLine.x1 - focusPoint.x) * perpDy - 
+                  (perpLine.y1 - focusPoint.y) * perpDx) / denominator;
+        
+        // if (t < 0) return null; // Intersection is behind focus point
+        
+        const intersectX = focusPoint.x + t * dx;
+        const intersectY = focusPoint.y + t * dy;
+        
+        // Calculate signed distance along perpendicular line
+        const s = ((intersectX - (perpLine.x1+ perpLine.x2) / 2) * perpDx + 
+                  (intersectY - (perpLine.y1+ perpLine.y2) / 2) * perpDy) / 
+                 (perpDx * perpDx + perpDy * perpDy);
+        
+        return {
+            x: intersectX,
+            y: intersectY,
+            distance: s * Math.sqrt(perpDx * perpDx + perpDy * perpDy) * 10
+        };
+    }
+};
 
   const perpLines = focusPoints.map(fp => calculatePerpendicularLine(fp));
 
@@ -206,6 +324,13 @@ const DualProjectionSystem = () => {
             >
               <PlusCircle className="w-4 h-4" />
               Add Point
+            </Button>
+            <Button 
+            onClick={() => setProjectionType(prev => 
+                prev === 'orthogonal' ? 'perspective' : 'orthogonal')}
+            className="flex items-center gap-2"
+            >
+                {projectionType === 'orthogonal' ? 'Switch to Perspective' : 'Switch to Orthogonal'}
             </Button>
           </div>
         </CardHeader>
@@ -393,6 +518,46 @@ const DualProjectionSystem = () => {
                 }
                 return null;
               })}
+
+              {/* Draw trails */}
+              {Object.entries(trails).map(([pointId, trail]) => {
+                const numericPointId = Number(pointId);
+                const point = points.find(p => p.id === numericPointId);
+                if (!point || point.id === anchorPoint) return null;
+                
+                const svgColor = getSvgColor(point.color);
+                
+                // Create path data from trail points
+                const pathData = trail.reduce((path, pos, index) => {
+                  // For the first point, we "Move" the pen to that position
+                  // For subsequent points, we draw a "Line" to that position
+                  return path + (index === 0 ? `M ${pos.x} ${pos.y}` : ` L ${pos.x} ${pos.y}`);
+                }, '');
+
+                // We can create a gradient effect by using multiple paths
+                // with different opacities and strokeWidths
+                return (
+                  <g key={`trail-${pointId}`}>
+                    {/* Base path - wider and more transparent */}
+                    <path
+                      d={pathData}
+                      stroke={svgColor}
+                      strokeWidth="3"
+                      fill="none"
+                      opacity="0.2"
+                    />
+                    {/* Main path - thinner and more visible */}
+                    <path
+                      d={pathData}
+                      stroke={svgColor}
+                      strokeWidth="1.5"
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  </g>
+                );
+              })}
+
             </svg>
           </div>
         </CardContent>
