@@ -47,6 +47,11 @@ const DualProjectionSystem = () => {
   const [projectionType, setProjectionType] = useState('orthogonal'); // or 'perspective'
 
   const [trails, setTrails] = useState({}); // Store trails for each point
+  const [currentAngle, setCurrentAngle] = useState(0);
+
+  const [eyePosition2EyePositionTrails, setEyePosition2EyePositionTrails] = useState({}); 
+
+
   const MAX_TRAIL_LENGTH = 100; // Maximum number of positions to remember
   const [lastTrailUpdate, setLastTrailUpdate] = useState({});  // Add this with other state declarations
   const TRAIL_UPDATE_INTERVAL = 50; // Update trail every 100ms
@@ -66,7 +71,7 @@ const DualProjectionSystem = () => {
     setPoints([...points, newPoint]);
   };
 
-  const updateTrails = (pointId, proj1, proj2) => {
+  const updateTrails = (anchorPositionTuple, pointId, proj1, proj2) => {
     if (!proj1 || !proj2) return;
 
     // Get current timestamp
@@ -102,6 +107,48 @@ const DualProjectionSystem = () => {
       
       // console.log('Updated trails:', updatedTrails); // Debug log
       return updatedTrails;
+    }); 
+    
+
+    setEyePosition2EyePositionTrails(prevEyePosition2EyePositionTrails => {
+      // Convert the tuple to a string key
+      const anchorPositionKey = anchorPositionTuple.join(',');
+
+      // for each eye position there is a dictionary that maps from objID to trail
+
+      // first get dictionary or create dictionary 
+      const newObjID2TrailDict = prevEyePosition2EyePositionTrails[anchorPositionKey] || {}; 
+
+      // second get trail 
+      const currentTrail = newObjID2TrailDict[pointId] || []; 
+
+      // Add new position to the current trail
+      const newTrail = [...currentTrail, { x: plotX, y: plotY }]; 
+
+      console.log("NewTrail: ",newTrail);
+
+      // Keep only the last MAX_TRAIL_LENGTH positions
+      if (currentTrail.length > MAX_TRAIL_LENGTH) {
+        currentTrail.shift(); 
+      }
+      
+      // new updated trails 
+      const updatedTrailDict = {
+        ...newObjID2TrailDict,
+        [pointId]: newTrail
+      };
+
+      console.log(updatedTrailDict);
+      
+      // put the updated trail dictionary back to the eyePosition2EyepositionTrailsDict 
+      const updatedEyePosition2EyePositionTrails = {
+        ...prevEyePosition2EyePositionTrails, 
+        [anchorPositionKey]: updatedTrailDict
+      }
+      
+      console.log(updatedEyePosition2EyePositionTrails);
+
+      return updatedEyePosition2EyePositionTrails;
     });
   };
 
@@ -170,14 +217,14 @@ const DualProjectionSystem = () => {
         if (point.id !== anchorPoint) {
           const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
           const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
-          updateTrails(point.id, proj1, proj2);
+          updateTrails([anchor.y, anchor.x], point.id, proj1, proj2);
         }
       });
   
       return newPoints;
     });
 
-    setRotationAngle(prev => (prev + 1) % 360);
+    // setRotationAngle(prev => (prev + 1) % 360);
   };
 
   const toggleRotation = () => {
