@@ -71,7 +71,7 @@ const DualProjectionSystem = () => {
     setPoints([...points, newPoint]);
   };
 
-  const updateTrails = (anchorPositionTuple, pointId, proj1, proj2) => {
+  const updateTrails = (anchorPositionTuple, pointId, proj1, proj2, angle1, angle2) => {
     if (!proj1 || !proj2) return;
 
     // Get current timestamp
@@ -86,7 +86,10 @@ const DualProjectionSystem = () => {
     
     // Calculate plot coordinates
     const plotX = 300 + (proj1.distance / 2);
-    const plotY = 300 - (proj2.distance / 2);
+    const plotY = 300 - (proj2.distance / 2); 
+
+    const plotAngleX = 300 + angle1 * 300; 
+    const plotAngleY = 300 + angle2 * 300;  
     
     setTrails(prevTrails => {
       // Get existing trail or create new one
@@ -123,7 +126,9 @@ const DualProjectionSystem = () => {
       const currentTrail = newObjID2TrailDict[pointId] || []; 
 
       // Add new position to the current trail
-      const newTrail = [...currentTrail, { x: plotX, y: plotY }]; 
+      const newTrail = [...currentTrail, { x: plotAngleX, y: plotAngleY}];  
+
+      // console.log("angle1: ", plotAngleX, "angle2: ", plotAngleY); 
 
       // console.log("NewTrail: ",newTrail);
 
@@ -179,7 +184,7 @@ const DualProjectionSystem = () => {
       if (point && anchorPoint) {
         const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
         const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
-        updateTrails(draggedPoint, proj1, proj2);
+        
       }
     }
   };
@@ -216,8 +221,12 @@ const DualProjectionSystem = () => {
       newPoints.forEach(point => {
         if (point.id !== anchorPoint) {
           const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
-          const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
-          updateTrails([anchor.y, anchor.x], point.id, proj1, proj2);
+          const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]); 
+
+          const angle1 = calculateAngle(point, focusPoints[0]); 
+          const angle2 = calculateAngle(point, focusPoints[1]); 
+
+          updateTrails([anchor.y, anchor.x], point.id, proj1, proj2, angle1, angle2);
         }
       });
   
@@ -268,7 +277,7 @@ const DualProjectionSystem = () => {
     const perpY = unitX;
 
     const offsetX = 50 * unitX;
-    const offsetY = 50 *unitY;
+    const offsetY = 50 * unitY;
 
     if (projectionType=='orthogonal'){
       return {
@@ -285,6 +294,20 @@ const DualProjectionSystem = () => {
         y2: focusPoint.y + perpY * PERPENDICULAR_LENGTH / 2 + offsetY
       };
     }
+  };
+
+  const calculateAngle = (point, focusPoint) => {
+    // Calculate the difference in x and y coordinates
+    const dx = point.x - focusPoint.x;
+    const dy = point.y - focusPoint.y; 
+
+    const grad = dx/ - dy;  
+    // console.log(grad);
+
+    const angleRadians = Math.atan(grad); 
+    // console.log(angleRadians);
+  
+    return angleRadians;
   };
 
   const calculateProjection = (point, focusPoint, perpLine) => {
@@ -351,7 +374,7 @@ const DualProjectionSystem = () => {
 
   return (
     <div className="flex flex-wrap gap-4 justify-center w-full h-[calc(100vh-2rem)]">
-      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[700px]">
+      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[900px]">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-bold">
             Dual Focus Projection System
@@ -521,7 +544,7 @@ const DualProjectionSystem = () => {
       </Card>
 
       {/* 2D Projection Plot */}
-      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[700px]">
+      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[900px]">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
             2D Projection Plot
@@ -655,12 +678,11 @@ const DualProjectionSystem = () => {
                 }
                 return null;
               })} */}
-
+              
               {Object.entries(eyePosition2EyePositionTrails).map(([anchorCoordinate, objectId2TrailDictionary]) =>{
                 const trailComponents = Object.entries(objectId2TrailDictionary).map(([pointId, trail]) => {
                   const numericPointId = Number(pointId);
                   const point = points.find(p => p.id === numericPointId);
-                  if (!point || point.id === anchorPoint) return null;
                   
                   const svgColor = getSvgColor(point.color);
                   
