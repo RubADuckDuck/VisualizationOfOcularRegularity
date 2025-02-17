@@ -34,9 +34,12 @@ function getSvgColor(tailwindClass) {
 
 
 const DualProjectionSystem = () => {
-  const [points, setPoints] = useState([]);
+  const [points, setPoints] = useState([]); 
+
   const [draggedPoint, setDraggedPoint] = useState(null);
   const [anchorPoint, setAnchorPoint] = useState(null);
+  const [anchorCoordinateHistory, setAnchorPointHistory] = useState([]); 
+
   const [isRotating, setIsRotating] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const rotationInterval = useRef(null);
@@ -61,15 +64,35 @@ const DualProjectionSystem = () => {
   const PERPENDICULAR_LENGTH = 700;
   const GRID_SIZE = 200;
 
+  const GRID_SPACING = 100; // Define grid spacing constant
+  // Helper function to snap a coordinate to the nearest grid position
+  const snapToGrid = (value) => {
+    return Math.round(value / GRID_SPACING) * GRID_SPACING;
+  };
+
   const addPoint = () => {
     const newPoint = {
       id: Date.now(),
-      x: 100,
-      y: 100,
+      x: snapToGrid(100), // Snap initial position to grid
+      y: snapToGrid(100),
       color: colors[points.length % colors.length]
     };
     setPoints([...points, newPoint]);
   };
+  
+  const addAnchorPointHistory = (x, y) => {
+    const angleX = calculateAngleWithCoord(x, y, focusPoints[0]);
+    const angleY = calculateAngleWithCoord(x, y, focusPoints[1]);
+
+    const newAnchorCoordinate = { 
+      x: 300 + angleX * 300, 
+      y: 300 + angleY * 300
+    } 
+
+    
+
+    setAnchorPointHistory([...anchorCoordinateHistory, newAnchorCoordinate]); 
+  }
 
   const updateTrails = (anchorPositionTuple, pointId, proj1, proj2, angle1, angle2) => {
     if (!proj1 || !proj2) return;
@@ -170,8 +193,12 @@ const DualProjectionSystem = () => {
   const handleMouseMove = (e) => {
     if (draggedPoint !== null && boxRef.current) {
       const rect = boxRef.current.getBoundingClientRect();
-      const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
-      const y = Math.min(Math.max(0, e.clientY - rect.top), rect.height);
+      const rawX = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
+      const rawY = Math.min(Math.max(0, e.clientY - rect.top), rect.height);
+
+      // Snap to grid
+      const x = snapToGrid(rawX);
+      const y = snapToGrid(rawY);
 
       setPoints(points.map(point => 
         point.id === draggedPoint 
@@ -255,7 +282,14 @@ const DualProjectionSystem = () => {
   }, []);
 
   const toggleAnchor = (pointId) => {
-    setAnchorPoint(anchorPoint === pointId ? null : pointId);
+    if (anchorPoint === pointId) {
+      setAnchorPoint(null); 
+    } else{
+      setAnchorPoint(pointId); 
+      const anchor = points.find(p => p.id === pointId); 
+      console.log(anchor);
+      addAnchorPointHistory(anchor.x, anchor.y); 
+    }
   };
 
   const calculatePerpendicularLine = (focusPoint) => {
@@ -300,6 +334,20 @@ const DualProjectionSystem = () => {
     // Calculate the difference in x and y coordinates
     const dx = point.x - focusPoint.x;
     const dy = point.y - focusPoint.y; 
+
+    const grad = dx/ - dy;  
+    // console.log(grad);
+
+    const angleRadians = Math.atan(grad); 
+    // console.log(angleRadians);
+  
+    return angleRadians;
+  };
+
+  const calculateAngleWithCoord = (x, y, focusPoint) => {
+    // Calculate the difference in x and y coordinates 
+    const dx = x - focusPoint.x;
+    const dy = y - focusPoint.y; 
 
     const grad = dx/ - dy;  
     // console.log(grad);
@@ -372,6 +420,20 @@ const DualProjectionSystem = () => {
 
   const perpLines = focusPoints.map(fp => calculatePerpendicularLine(fp));
 
+  // Function to generate grid points
+  const generateGridPoints = () => {
+    const gridPoints = [];
+    const width = boxRef.current?.clientWidth || 700;
+    const height = boxRef.current?.clientHeight || 900;
+    
+    for (let x = 0; x <= width; x += GRID_SPACING) {
+      for (let y = 0; y <= height; y += GRID_SPACING) {
+        gridPoints.push({ x, y });
+      }
+    }
+    return gridPoints;
+  };
+
   return (
     <div className="flex flex-wrap gap-4 justify-center w-full h-[calc(100vh-2rem)]">
       <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[900px]">
@@ -414,6 +476,18 @@ const DualProjectionSystem = () => {
           >
             {/* SVG layer for lines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
+              {/* Add grid points */}
+              {generateGridPoints().map((point, index) => (
+                <circle
+                  key={`grid-${index}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r="1"
+                  fill="#5B55E0"
+                  opacity="1"
+                />
+              ))}
+
               {anchorPoint && (() => {
                 const anchor = points.find(p => p.id === anchorPoint);
                 if (anchor) {
@@ -719,6 +793,18 @@ const DualProjectionSystem = () => {
 
                 return trailComponents
               })}
+
+              {/* Add anchor point history */}
+              {anchorCoordinateHistory.map((point, index) => (
+                <circle
+                  key={`anchor-history-${index}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r="3"
+                  fill="#1B1510"
+                  opacity="1"
+                />
+              ))}
             </svg>
           </div>
         </CardContent>
