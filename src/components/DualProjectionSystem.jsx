@@ -632,8 +632,8 @@ const DualProjectionSystem = () => {
               <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
               
               {/* Axis labels */}
-              <text x="540" y="320" className="text-sm">Focus 1</text>
-              <text x="310" y="60" className="text-sm">Focus 2</text>
+              <text x="540" y="320" className="text-sm">Photoreceptor_1</text>
+              <text x="310" y="60" className="text-sm">Photoreceptor_2</text>
 
               {/* Plot points */}
               {anchorPoint && points.map(point => {
@@ -722,8 +722,8 @@ const DualProjectionSystem = () => {
               <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
               
               {/* Axis labels */}
-              <text x="540" y="320" className="text-sm">Focus 1</text>
-              <text x="310" y="60" className="text-sm">Focus 2</text>
+              <text x="540" y="320" className="text-sm">Eye_position_1</text>
+              <text x="310" y="60" className="text-sm">Eye_position_2</text>
 
               {/* Plot points */}
               {/* {anchorPoint && points.map(point => {
