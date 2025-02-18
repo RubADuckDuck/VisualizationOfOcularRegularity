@@ -200,11 +200,26 @@ const DualProjectionSystem = () => {
       const x = snapToGrid(rawX);
       const y = snapToGrid(rawY);
 
+      // add anchor to eye position plot
+      if (draggedPoint === anchorPoint) {
+        const anchor = points.find(p => p.id === draggedPoint); 
+        
+        if (anchor.x === x && anchor.y === y) {
+
+        }else{
+          console.log(anchor);
+          addAnchorPointHistory(x, y); 
+        }
+        
+      }
+
       setPoints(points.map(point => 
         point.id === draggedPoint 
           ? { ...point, x, y }
           : point
       ));
+      
+      
 
       // Update trails for the dragged point
       const point = points.find(p => p.id === draggedPoint);
@@ -213,8 +228,22 @@ const DualProjectionSystem = () => {
         const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
         
       }
+
+
     }
   };
+  
+
+  // const toggleAnchor = (pointId) => {
+  //   if (anchorPoint === pointId) {
+  //     setAnchorPoint(null); 
+  //   } else{
+  //     setAnchorPoint(pointId); 
+  //     const anchor = points.find(p => p.id === pointId); 
+  //     console.log(anchor);
+  //     addAnchorPointHistory(anchor.x, anchor.y); 
+  //   }
+  // };
 
   const stopDragging = () => {
     setDraggedPoint(null);
