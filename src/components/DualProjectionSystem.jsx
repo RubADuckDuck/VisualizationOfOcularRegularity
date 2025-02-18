@@ -646,96 +646,6 @@ const DualProjectionSystem = () => {
         </CardContent>
       </Card>
 
-      {/* 2D Projection Plot */}
-      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[900px]">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">
-            2D Projection Plot
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="w-full h-full flex flex-col overflow-hidden">
-          <div className="relative min-h-[90%] bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full">
-              {/* Coordinate axes */}
-              <line x1="50" y1="300" x2="550" y2="300" stroke="black" strokeWidth="2" /> {/* X-axis */}
-              <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
-              
-              {/* Axis labels */}
-              <text x="540" y="320" className="text-sm">Photoreceptor_1</text>
-              <text x="310" y="60" className="text-sm">Photoreceptor_2</text>
-
-              {/* Plot points */}
-              {anchorPoint && points.map(point => {
-                if (point.id === anchorPoint) return null;
-                
-                const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
-                const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
-                
-                if (proj1 && proj2) {
-                  // Scale and transform the coordinates to fit the plot
-                  const plotX = 300 + (proj1.distance / 2);
-                  const plotY = 300 - (proj2.distance / 2);
-                  const svgColor = getSvgColor(point.color);
-                  
-                  return (
-                    <g key={`plot-${point.id}`}>
-                      <circle
-                        cx={plotX}
-                        cy={plotY}
-                        r="5"
-                        // fill={point.color.split(' ')[0]}
-                        fill={svgColor}
-                      />
-                    </g>
-                  );
-                }
-                return null;
-              })}
-
-              {/* Draw trails */}
-              {Object.entries(trails).map(([pointId, trail]) => {
-                const numericPointId = Number(pointId);
-                const point = points.find(p => p.id === numericPointId);
-                if (!point || point.id === anchorPoint) return null;
-                
-                const svgColor = getSvgColor(point.color);
-                
-                // Create path data from trail points
-                const pathData = trail.reduce((path, pos, index) => {
-                  // For the first point, we "Move" the pen to that position
-                  // For subsequent points, we draw a "Line" to that position
-                  return path + (index === 0 ? `M ${pos.x} ${pos.y}` : ` L ${pos.x} ${pos.y}`);
-                }, '');
-
-                // We can create a gradient effect by using multiple paths
-                // with different opacities and strokeWidths
-                return (
-                  <g key={`trail-${pointId}`}>
-                    {/* Base path - wider and more transparent */}
-                    <path
-                      d={pathData}
-                      stroke={svgColor}
-                      strokeWidth="3"
-                      fill="none"
-                      opacity="0.2"
-                    />
-                    {/* Main path - thinner and more visible */}
-                    <path
-                      d={pathData}
-                      stroke={svgColor}
-                      strokeWidth="1.5"
-                      fill="none"
-                      opacity="0.6"
-                    />
-                  </g>
-                );
-              })}
-
-            </svg>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 2D EyePositions Plot */}
       <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[700px]">
         <CardHeader>
@@ -838,6 +748,98 @@ const DualProjectionSystem = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* 2D Projection Plot */}
+      <Card className="flex-1 min-w-[700px] max-w-4xl min-h-[900px]">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">
+            2D Projection Plot
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="w-full h-full flex flex-col overflow-hidden">
+          <div className="relative min-h-[90%] bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden">
+            <svg className="absolute inset-0 w-full h-full">
+              {/* Coordinate axes */}
+              <line x1="50" y1="300" x2="550" y2="300" stroke="black" strokeWidth="2" /> {/* X-axis */}
+              <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
+              
+              {/* Axis labels */}
+              <text x="540" y="320" className="text-sm">Photoreceptor_1</text>
+              <text x="310" y="60" className="text-sm">Photoreceptor_2</text>
+
+              {/* Plot points */}
+              {anchorPoint && points.map(point => {
+                if (point.id === anchorPoint) return null;
+                
+                const proj1 = calculateProjection(point, focusPoints[0], perpLines[0]);
+                const proj2 = calculateProjection(point, focusPoints[1], perpLines[1]);
+                
+                if (proj1 && proj2) {
+                  // Scale and transform the coordinates to fit the plot
+                  const plotX = 300 + (proj1.distance / 2);
+                  const plotY = 300 - (proj2.distance / 2);
+                  const svgColor = getSvgColor(point.color);
+                  
+                  return (
+                    <g key={`plot-${point.id}`}>
+                      <circle
+                        cx={plotX}
+                        cy={plotY}
+                        r="5"
+                        // fill={point.color.split(' ')[0]}
+                        fill={svgColor}
+                      />
+                    </g>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Draw trails */}
+              {Object.entries(trails).map(([pointId, trail]) => {
+                const numericPointId = Number(pointId);
+                const point = points.find(p => p.id === numericPointId);
+                if (!point || point.id === anchorPoint) return null;
+                
+                const svgColor = getSvgColor(point.color);
+                
+                // Create path data from trail points
+                const pathData = trail.reduce((path, pos, index) => {
+                  // For the first point, we "Move" the pen to that position
+                  // For subsequent points, we draw a "Line" to that position
+                  return path + (index === 0 ? `M ${pos.x} ${pos.y}` : ` L ${pos.x} ${pos.y}`);
+                }, '');
+
+                // We can create a gradient effect by using multiple paths
+                // with different opacities and strokeWidths
+                return (
+                  <g key={`trail-${pointId}`}>
+                    {/* Base path - wider and more transparent */}
+                    <path
+                      d={pathData}
+                      stroke={svgColor}
+                      strokeWidth="3"
+                      fill="none"
+                      opacity="0.2"
+                    />
+                    {/* Main path - thinner and more visible */}
+                    <path
+                      d={pathData}
+                      stroke={svgColor}
+                      strokeWidth="1.5"
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  </g>
+                );
+              })}
+
+            </svg>
+          </div>
+        </CardContent>
+      </Card>
+
+      
     </div>
   );
 };
