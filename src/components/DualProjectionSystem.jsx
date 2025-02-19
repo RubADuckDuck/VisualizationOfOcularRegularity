@@ -503,8 +503,24 @@ const DualProjectionSystem = () => {
             onMouseUp={stopDragging}
             onMouseLeave={stopDragging}
           >
+           
+
             {/* SVG layer for lines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
+              
+              
+              {/* Axis labels */}
+              <text x="230" y="620" className="text-sm" fill="#DC2626" 
+                style={{ 
+                  fontSize: "20px"
+                }}
+              >Left Eye</text>
+              <text x="430" y="620" className="text-sm" fill="#8a5cf6"
+                style={{ 
+                  fontSize: "20px"
+                }}
+              >Right Eye</text>
+
               {/* Add grid points */}
               {generateGridPoints().map((point, index) => (
                 <circle
@@ -661,8 +677,28 @@ const DualProjectionSystem = () => {
               <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
               
               {/* Axis labels */}
-              <text x="540" y="320" className="text-sm">Eye_position_1</text>
-              <text x="310" y="60" className="text-sm">Eye_position_2</text>
+              <text x="540" y="340" className="text-sm" fill="#DC2626" 
+                style={{ 
+                  fontSize: "40px"
+                }}
+              >{"\u03B8\u2081"}</text>
+              <text x="310" y="60" className="text-sm" fill="#8a5cf6"
+                style={{ 
+                  fontSize: "40px"
+                }}
+              >{"\u03B8\u2082"}</text>
+
+              {/* Axis labels */}
+              <text x="50" y="650" className="text-sm" fill="#DC2626" 
+                style={{ 
+                  fontSize: "20px"
+                }}
+              >{"\u03B8\u2081"}  :  Rotational State of Left Eye</text>
+              <text x="50" y="690" className="text-sm" fill="#8a5cf6"
+                style={{ 
+                  fontSize: "20px"
+                }}
+              >{"\u03B8\u2082"}  :  Rotational State of Right Eye</text>
 
               {/* Plot points */}
               {/* {anchorPoint && points.map(point => {
@@ -764,8 +800,36 @@ const DualProjectionSystem = () => {
               <line x1="300" y1="50" x2="300" y2="550" stroke="black" strokeWidth="2" /> {/* Y-axis */}
               
               {/* Axis labels */}
-              <text x="540" y="320" className="text-sm">Photoreceptor_1</text>
-              <text x="310" y="60" className="text-sm">Photoreceptor_2</text>
+              {/* <text x="540" y="320" className="text-sm">Photoreceptor_1</text>
+              <text x="310" y="60" className="text-sm">Photoreceptor_2</text> */}
+
+              {/* Axis labels */}
+              <text x="540" y="340" className="text-sm" fill="#DC2626" 
+                style={{ 
+                  fontSize: "40px"
+                }}
+              >P{"\u2081"}</text>
+              <text x="310" y="60" className="text-sm" fill="#8a5cf6"
+                style={{ 
+                  fontSize: "40px"
+                }}
+              >P{"\u2082"}</text>
+
+              {/* Axis labels */}
+              <text x="50" y="650" className="text-sm" fill="#DC2626" 
+                style={{ 
+                  fontSize: "16px"
+                }}
+              >
+                P{"\u2081"} : Set of Photoreceptors on the Left Eye ( visualized through topology inherited by proprioception )
+              </text>
+              <text x="50" y="690" className="text-sm" fill="#8a5cf6"
+                style={{ 
+                  fontSize: "16px"
+                }}
+                >
+                P{"\u2082"} : Set of Photoreceptors on the Right Eye ( visualized through topology inherited by proprioception )
+              </text>
 
               {/* Plot points */}
               {anchorPoint && points.map(point => {
